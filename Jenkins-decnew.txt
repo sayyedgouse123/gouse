@@ -1,0 +1,45 @@
+pipeline {
+
+   agent any
+
+   environment{
+ 
+       PATH  ="/opt/maven3/bin:$PATH"
+
+   }
+   stages{
+   
+       stage ("Git checkout"){
+     
+          steps{
+             
+               git credentialsId: 'javahome', url: 'https://github.com/sayyedgouse123/gouse.git'
+
+          }  
+        }
+        stage ("Maven Build"){
+            
+            steps{
+ 
+                 sh "mvn clean package"
+                  sh "mv target/*.war target/gouse.war"  
+               }
+             }
+             stage ("deploy-dev"){
+                steps{
+                    sshagent(['tomcat-new']) {
+                    sh """
+                        scp -o StrictHostKeyChecking=no  target/gouse.war  ec2-user@15.206.169.111: /home/ec2-user/apache-tomcat-9.0.58/webapps/
+
+                        ssh ec2-user@15.206.169.111  /home/ec2-user/apache-tomcat-9.0.58/bin/shutdown.sh
+
+                        ssh ec2-user@15.206.169.111  /home/ec2-user/apache-tomcat-9.0.58/bin/startup.sh
+
+                      """
+ 
+                    }
+ 
+                  }
+              }
+         }
+   }
